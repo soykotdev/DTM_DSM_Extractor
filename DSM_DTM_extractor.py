@@ -1,4 +1,4 @@
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer  # Add QgsRasterLayer here
 from qgis.PyQt.QtWidgets import QAction, QFileDialog
 import processing
 
