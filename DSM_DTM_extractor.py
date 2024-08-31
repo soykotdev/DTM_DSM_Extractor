@@ -1,5 +1,5 @@
 from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
-from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QInputDialog
 from qgis.utils import iface
 import processing
 
@@ -144,7 +144,8 @@ class DSM_DTMExtractor:
             'OUTPUT': 'memory:'
         })['OUTPUT']
 
-        
+        # Set the final output layer name to 'merged_point'
+       
 
         # Step 9: Add raster values to the merged points (DTM)
         raster_values_output_DTM = processing.run("sagang:addrastervaluestopoints", {
