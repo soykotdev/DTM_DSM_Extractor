@@ -1,5 +1,6 @@
-from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer  # Add QgsRasterLayer here
-from qgis.PyQt.QtWidgets import QAction, QFileDialog
+from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.utils import iface
 import processing
 
 class DSM_DTMExtractor:
@@ -21,28 +22,36 @@ class DSM_DTMExtractor:
         self.iface.removePluginMenu("&DSM, DTM extractor", self.action)
 
     def run(self):
-        # Let the user select the input files
-        centerline_path, _ = QFileDialog.getOpenFileName(None, "Select Centerline Shapefile", "", "Shapefiles (*.shp)")
-        buffer_path, _ = QFileDialog.getOpenFileName(None, "Select Buffer Shapefile", "", "Shapefiles (*.shp)")
-        dsm_raster_path, _ = QFileDialog.getOpenFileName(None, "Select DSM Raster", "", "Raster files (*.tif)")
-        dtm_raster_path, _ = QFileDialog.getOpenFileName(None, "Select DTM Raster", "", "Raster files (*.tif)")
+        # Get layers from QGIS canvas
+        layers = QgsProject.instance().mapLayers().values()
 
-        if not all([centerline_path, buffer_path, dsm_raster_path, dtm_raster_path]):
-            self.iface.messageBar().pushMessage("Error", "All inputs are required!", level=3)
+        # Lists for storing available vector and raster layers
+        vector_layers = []
+        raster_layers = []
+
+        # Separate vector and raster layers
+        for layer in layers:
+            if isinstance(layer, QgsVectorLayer):
+                vector_layers.append(layer)
+            elif isinstance(layer, QgsRasterLayer):
+                raster_layers.append(layer)
+
+        # Ensure that enough layers are available
+        if len(vector_layers) < 2 or len(raster_layers) < 2:
+            self.iface.messageBar().pushMessage("Error", "Not enough layers available on the canvas!", level=3)
             return
 
-        # Load selected layers
-        centerline_layer = QgsVectorLayer(centerline_path, "Centerline", "ogr")
-        buffer_layer = QgsVectorLayer(buffer_path, "Buffer", "ogr")
-        dsm_raster_layer = QgsRasterLayer(dsm_raster_path, "DSM")
-        dtm_raster_layer = QgsRasterLayer(dtm_raster_path, "DTM")
+        # Allow the user to select the required layers
+        centerline_layer = self.selectLayer(vector_layers, "Select the Centerline Layer")
+        buffer_layer = self.selectLayer(vector_layers, "Select the Buffer Layer")
+        dsm_raster_layer = self.selectLayer(raster_layers, "Select the DSM Raster Layer")
+        dtm_raster_layer = self.selectLayer(raster_layers, "Select the DTM Raster Layer")
 
-        QgsProject.instance().addMapLayer(centerline_layer)
-        QgsProject.instance().addMapLayer(buffer_layer)
-        QgsProject.instance().addMapLayer(dsm_raster_layer)
-        QgsProject.instance().addMapLayer(dtm_raster_layer)
+        if not all([centerline_layer, buffer_layer, dsm_raster_layer, dtm_raster_layer]):
+            self.iface.messageBar().pushMessage("Error", "Layer selection was canceled.", level=3)
+            return
 
-        # Execute the processing steps as in your original script
+        # Execute the processing steps using the selected layers
         # Step 1: Buffer the centerline with 2m distance
         buffer_output = processing.run("native:buffer", {
             'INPUT': centerline_layer,
@@ -135,11 +144,7 @@ class DSM_DTMExtractor:
             'OUTPUT': 'memory:'
         })['OUTPUT']
 
-        # Set the final output layer name to 'merged_point'
-        merged_output.setName("merged_point")
-
-        # Add the final layer to the QGIS canvas
-        QgsProject.instance().addMapLayer(merged_output)
+        
 
         # Step 9: Add raster values to the merged points (DTM)
         raster_values_output_DTM = processing.run("sagang:addrastervaluestopoints", {
@@ -162,3 +167,11 @@ class DSM_DTMExtractor:
 
         result_layer_DSM = QgsVectorLayer(raster_values_output_DSM, "DSM", "ogr")
         QgsProject.instance().addMapLayer(result_layer_DSM)
+
+    def selectLayer(self, layers, title):
+        """Helper function to select a layer from the list"""
+        layer_names = [layer.name() for layer in layers]
+        selected_name, ok = QInputDialog.getItem(self.iface.mainWindow(), title, "Select a layer:", layer_names, 0, False)
+        if ok and selected_name:
+            return next(layer for layer in layers if layer.name() == selected_name)
+        return None
