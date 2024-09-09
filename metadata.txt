@@ -2,6 +2,7 @@
 name=DSM, DTM extractor
 qgisMinimumVersion=3.0
 description=A plugin to extract DSM and DTM values based on user-selected shapefiles and raster layers.
+This plugin is only design for SMEC methodology. I faced too much time consumption that led me to automation.
 version=1.0
 author=Soykot Hossain sarker
 email= soykot244@gmail.com
