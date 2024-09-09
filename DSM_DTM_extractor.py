@@ -140,6 +140,12 @@ class DSM_DTMExtractor:
             'OUTPUT': 'memory:'
         })['OUTPUT']
 
+<<<<<<< HEAD
+=======
+        # Set the final output layer name to 'merged_point'
+       
+
+>>>>>>> 13c4f21a5945d9a5c2b53a9782610d81abb928cc
         # Step 9: Add raster values to the merged points (DTM)
         band_count = dtm_raster_layer.bandCount()
         temp_dir = tempfile.gettempdir()  # Use a temporary directory
